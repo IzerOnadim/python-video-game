@@ -1,0 +1,6 @@
+'playerStateList', (0, 14)
+'livesVariable', (512, 5)
+'levelVariable', (1024, 5)
+'scoreVariable', (1536, 5)
+'timedVariable', (2048, 4)
+'timedLeftVariable', (2560, 6)
