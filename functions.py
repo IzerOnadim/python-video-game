@@ -420,8 +420,6 @@ def createNextLevel():
         skips.append(classes.roundSkip(xVal, yVal))
 
 # defines what will happen before the first level when play is pressed
-
-
 def levelOne():
     # a background is drawn, as well as ready? and go!
     window.blit(introBackground, (0, 0))
@@ -443,8 +441,6 @@ def levelOne():
     gameLoop()
 
 # draw the screen and everything on it
-
-
 def drawGameWindow():
 
     global speedTimer
@@ -536,8 +532,6 @@ def drawGameWindow():
     pygame.display.update()
 
 # what happens when player's life count hit zero
-
-
 def gameOver():
     global highscore
     global highlevel
@@ -583,8 +577,6 @@ def gameOver():
     gameIntro()
 
 # reads the highscores from a local textfile
-
-
 def loadData():
     # make highscore and highest level global so they can be changed and used by other parts of the program
     global highscore
@@ -610,8 +602,6 @@ def loadData():
             highlevel = 0
 
 # save the level that a player got to so they can resume
-
-
 def saveGame():
     global lives
     global level
@@ -633,8 +623,6 @@ def saveGame():
     shelfFile.close()
 
 # resume the game from the level that a player saved
-
-
 def loadGame():
     global lives
     global level
@@ -656,8 +644,6 @@ def loadGame():
     gameLoop()
 
 # reset values of player for a new game
-
-
 def reset():
     global lives
     global level
@@ -671,8 +657,6 @@ def reset():
     Score = 0
 
 # called to start the game
-
-
 def gameIntro():
 
     global mute
@@ -792,8 +776,6 @@ def gameIntro():
         pygame.display.update()
 
 # will be called during the game loop - interupts the game, which can be carried on when you resume
-
-
 def pause():
     pause = True
     global mute
@@ -890,7 +872,7 @@ def pause():
         window.blit(enterToResume, (220, 200))
         pygame.display.update()
 
-# called when player presses play
+# checks for collisions between given object and given list of objects
 def rectCollide(objects, remove = False, collider = player, boss = False):
 
     global Score
@@ -917,6 +899,34 @@ def rectCollide(objects, remove = False, collider = player, boss = False):
                 # return to to indicate a collision
                 return True
 
+# checks for collisions between player and power ups
+def powerPickUp(objects, speed = False, inv = False):
+
+    global speedTimer
+    global invincibilityTimer
+    global playerInv
+
+    for object in objects:
+        if object.y - object.radius < player.y + player.height and object.y + object.radius > player.y:
+            if object.x - object.radius < player.x + player.width and object.x + object.radius > player.x:
+                objects.remove(object)
+                if speed:
+                    # if a speed power up is not already in effect the player can pick one up
+                    if speedTimer == 0:
+                        # players velocity is increased by 35%
+                        player.vel = player.vel * 1.35
+                        # timer is started to time the effect of the power up
+                        speedTimer = dt.now()
+                if inv:
+                    # if the power up is not already in effect the player can pick one up
+                    if invincibilityTimer == 0:
+                        # make player invincible
+                        playerInv = True
+                        # start timer on invincibility
+                        invincibilityTimer = dt.now()
+                return True
+
+# called when player presses play
 def gameLoop():
 
     # parse all the global variables
@@ -1082,17 +1092,7 @@ def gameLoop():
                     boatDestroyed = True
 
         # check for a collision between the player and the speed power up
-        for speed in speeds:
-            if speed.y - speed.radius < player.y + player.height and speed.y + speed.radius > player.y:
-                if speed.x - speed.radius < player.x + player.width and speed.x + speed.radius > player.x:
-                    # if a speed power up is not already in effect the player can pick one up
-                    if speedTimer == 0:
-                        # speed power up is removed when picked up
-                        speeds.remove(speed)
-                        # players velocity is increased by 35%
-                        player.vel = player.vel * 1.35
-                        # timer is started to time the effect of the power up
-                        speedTimer = dt.now()
+        powerPickUp(speeds, True, False)
 
         # if a power up has been picked up, the timer is running so not zero
         if speedTimer != 0:
@@ -1105,17 +1105,7 @@ def gameLoop():
                 speedTimer = 0
 
         # check for a collision between the player and the invincible power up
-        for invincible in invincibles:
-            if invincible.y - invincible.radius < player.y + player.height and invincible.y + invincible.radius > player.y:
-                if invincible.x - invincible.radius < player.x + player.width and invincible.x + invincible.radius > player.x:
-                    # if the power up is not already in effect the player can pick one up
-                    if invincibilityTimer == 0:
-                        # power up is removed when pick up
-                        invincibles.remove(invincible)
-                        # make player invincible
-                        playerInv = True
-                        # start timer on invincibility
-                        invincibilityTimer = dt.now()
+        powerPickUp(invincibles, False, True)
 
         # if a power up has been picked up, the timer is running so not zero
         if invincibilityTimer != 0:
@@ -1128,34 +1118,29 @@ def gameLoop():
                 invincibilityTimer = 0
 
         # check for a collision between the player and the nuke power up
-        for nuke in nukes:
-            if nuke.y - nuke.radius < player.y + player.height and nuke.y + nuke.radius > player.y:
-                if nuke.x - nuke.radius < player.x + player.width and nuke.x + nuke.radius > player.x:
-                    # power up is removed when pick up
-                    nukes.remove(nuke)
-                    boats.clear()
-                    bullets.clear()
-                    ceilingBlocks.clear()
-                    enemies.clear()
-                    bosses.clear()
-                    explosionSound.play()
-                    window.blit(explosion, (0, 0))
-                    pygame.display.update()
-                    delay(10)
+        if powerPickUp(nukes):
+            # nukes remove all over object
+            boats.clear()
+            bullets.clear()
+            ceilingBlocks.clear()
+            enemies.clear()
+            bosses.clear()
+            # explosion sound and visual effects
+            explosionSound.play()
+            window.blit(explosion, (0, 0))
+            pygame.display.update()
+            delay(10)
 
         # check for a collision between the player and the skip power up
-        for skip in skips:
-            if skip.y - skip.radius < player.y + player.height and skip.y + skip.radius > player.y:
-                if skip.x - skip.radius < player.x + player.width and skip.x + skip.radius > player.x:
-                    # power up is removed when pick up
-                    skips.remove(skip)
-                    level += 1
-                    createNextLevel()
+        if powerPickUp(skips):
+            level += 1
+            createNextLevel()
 
         # checks for collisions between ceiling and player, and stops the player from passing if there is
         for ceilingBlock in ceilingBlocks:
             if player.y <= ceilingBlock.height:
-                if ceilingBlock.x <= player.x <= ceilingBlock.x + ceilingBlock.width or ceilingBlock.x <= player.x + player.width <= ceilingBlock.x + ceilingBlock.width:
+                if (ceilingBlock.x <= player.x <= ceilingBlock.x + ceilingBlock.width or
+                    ceilingBlock.x <= player.x + player.width <= ceilingBlock.x + ceilingBlock.width):
                     # stops player from passing to next level
                     Pass = False
             else:
