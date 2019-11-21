@@ -64,9 +64,7 @@ skip = pygame.transform.scale(skip, (40, 40))
 sailRight = True
 
 # create the character super class
-
-
-class character(object):
+class Character(object):
     def __init__(self, x, y, width, height):
         # these parameters are set during instantiation
         self.x = x
@@ -77,7 +75,7 @@ class character(object):
 # create boat sub class, from character class
 
 
-class boat(character):
+class Player(Character):
     def __init__(self, x, y, width, height):
         # inherit attributes of character class
         super(). __init__(x, y, width, height)
@@ -88,6 +86,9 @@ class boat(character):
         else:
             self.vel = 3 * (1.05 ** 20)
 
+        # initial coordinates of player
+        self.xInit = 337
+        self.yInit = 650
         # other attributes
         self.image = mainBoat
 
@@ -112,13 +113,13 @@ class boat(character):
             # delay of a second to give the user a chance to see the text on the screen
             fn.delay(10)
         # reset the player to its original position
-        self.x = 337
-        self.y = 650
+        self.x = self.xInit
+        self.y = self.yInit
 
 # create obstacles sub class, from character class
 
 
-class obstacles(character):
+class obstacles(Character):
     def __init__(self, x, y, width, height, end):
         # inherit attributes of character class
         super(). __init__(x, y, width, height)
@@ -179,7 +180,7 @@ class obstacles(character):
 # create chasers sub class, from character class
 
 
-class chasers(character):
+class chasers(Character):
     def __init__(self, x, y, width, height):
         # inherit attributes of character class
         super(). __init__(x, y, width, height)
@@ -237,7 +238,7 @@ class chasers(character):
 # create bigBoss sub class, from character class
 
 
-class bigBoss(character):
+class bigBoss(Character):
     def __init__(self, x, y, width, height):
         # inherit attributes of character class
         super(). __init__(x, y, width, height)
@@ -274,7 +275,7 @@ class bigBoss(character):
 # powerup super class
 
 
-class powerup(object):
+class Powerup(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -282,7 +283,7 @@ class powerup(object):
 # construct class for lives
 
 
-class healthPoints(powerup):
+class healthPoints(Powerup):
     def __init__(self, x, y):
         # inherit from powerup
         super(). __init__(x, y)
@@ -297,7 +298,7 @@ class healthPoints(powerup):
 # construct class for treasure / score
 
 
-class scorePoints(powerup):
+class scorePoints(Powerup):
     def __init__(self, x, y):
         # inherit from powerup
         super(). __init__(x, y)
@@ -312,7 +313,7 @@ class scorePoints(powerup):
 # construct class for a powerup that will give the player increases speed for a short time
 
 
-class speedUp(powerup):
+class speedUp(Powerup):
     def __init__(self, x, y):
         # inherit from powerup
         super(). __init__(x, y)
@@ -327,7 +328,7 @@ class speedUp(powerup):
 # construct class for a power up that will make player invincible for a short time
 
 
-class invincibility(powerup):
+class invincibility(Powerup):
     def __init__(self, x, y):
         # inherit from powerup class
         super(). __init__(x, y)
@@ -339,7 +340,7 @@ class invincibility(powerup):
         window.blit(star, ((self.x - self.radius), (self.y - self.radius)))
 
 
-class bomb(powerup):
+class bomb(Powerup):
     def __init__(self, x, y):
         # inherit from powerup class
         super(). __init__(x, y)
@@ -351,7 +352,7 @@ class bomb(powerup):
         window.blit(nuke, ((self.x - self.radius), (self.y - self.radius)))
 
 
-class roundSkip(powerup):
+class roundSkip(Powerup):
     def __init__(self, x, y):
         # inherit from powerup class
         super(). __init__(x, y)
@@ -432,5 +433,5 @@ class projectile(object):
         window.blit(bulletFire, (self.x, self.y))
 
 
-# instantiate player using boat class
-player = boat(337, 650, 25, 50)
+# instantiate player using Player class
+player = Player(337, 650, 25, 50)

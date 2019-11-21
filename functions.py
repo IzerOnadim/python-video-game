@@ -118,7 +118,6 @@ timed = False
 
 
 def music():
-
     global mute
     # when mute button is pressed, checks if music was already muted, if so unmutes, if not mutes the music
     if mute:
@@ -573,7 +572,7 @@ def gameOver():
     textLevelReached = font4.render(FINALLEVEL, 1, WHITE)
 
     window.blit(textOver, (150, windowWidth/2))
-    window.blit(textFinalScore, ((windowWidth/2), 420))
+    window.blit(textFinalScore, (windowWidth/2 - textFinalScore.get_width()/2, 420))
     window.blit(textLevelReached, (235, 455))
 
     pygame.display.update()
@@ -892,11 +891,35 @@ def pause():
         pygame.display.update()
 
 # called when player presses play
+def rectCollide(objects, remove = False, collider = player, boss = False):
 
+    global Score
+
+    for object in objects:
+        # check for collision between player and rectangular object
+        if object.y <= collider.y <= object.y + object.height or collider.y <= object.y <= collider.y + collider.height:
+            if object.x <= collider.x <= object.x + object.width or collider.x <= object.x <= collider.x + collider.width:
+                if remove:
+                    # remove object from list
+                    objects.remove(object)
+                # if this object is a boss
+                if boss:
+                    #if boss still has lives
+                    if object.lives > 1:
+                        # decrease boss lives by one
+                        object.lives -= 1
+                        # 5 points for shooting boss
+                        Score += 5
+                    else:
+                        objects.remove(object)
+                        # 10 points for killing the boss
+                        Score += 10
+                # return to to indicate a collision
+                return True
 
 def gameLoop():
 
-    # define all the global variables
+    # parse all the global variables
     global level
     global lives
     global Score
@@ -957,51 +980,106 @@ def gameLoop():
             if event.type == pygame.QUIT:
                 run = False
 
-        # checks for collisions between player and boat obstacles
-        for boat in boats:
-            # checks if player and boat y values overlap
-            if player.y <= boat.y <= player.y + player.height or boat.y <= player.y <= boat.y + boat.height:
-                # checks if player and boat x values overlap
-                if player.x <= boat.x <= player.x + player.width or boat.x <= player.x <= boat.x + boat.width:
-                    # call player's hit method to reset player
-                    player.hit()
+        # if its level 1 a door opens up in the wall allowing player to pass through to the next level
+        # rep prevents this from being repeated every frame
+        if level == 1 and rep == True and not scores:
+            ceilingBlocks.remove(ceilingBlocks[8])
+            ceilingBlocks.remove(ceilingBlocks[8])
+            rep = False
 
-            # checks for collisions between boss and boats
-            for boss in bosses:
-                if boss.y <= boat.y <= boss.y + boss.height or boat.y <= boss.y <= boat.y + boat.height:
-                    if boss.x <= boat.x <= boss.x + boss.width or boat.x <= boss.x <= boat.x + boat.width:
-                        if not boatDestroyed:
-                            # remove boat from list
-                            boats.pop(boats.index(boat))
-                            # prevent two collisions from happening with the same boat
-                            # so the game doesn't try to remove the same boat twice and give an error
-                            boatDestroyed = True
+        # checks for collisions between player and boat obstacles
+        if rectCollide(boats):
+            # call player's hit method to reset player
+            player.hit()
 
         # checks for collisions between boss and player
-        for boss in bosses:
-            if boss.y <= player.y <= boss.y + boss.height or player.y <= boss.y <= player.y + player.height:
-                if boss.x <= player.x <= boss.x + boss.width or player.x <= boss.x <= player.x + player.width:
-                    player.hit()
+        if rectCollide(bosses):
+            player.hit()
 
         # checks for collisions between player and health points
-        for health in healths:
-            if player.y <= health.y <= player.y + player.height or health.y <= player.y <= health.y + health.height:
-                if player.x <= health.x <= player.x + player.width or health.x <= player.x <= health.x + health.width:
-                    # remove health point from list
-                    healths.remove(health)
-                    # increase player lives
-                    lives += 1
+        if rectCollide(healths, True):
+            # increase player lives
+            lives += 1
 
         # checks for collisions between player and score points
-        for score in scores:
-            if player.y <= score.y <= player.y + player.height or score.y <= player.y <= score.y + score.height:
-                if player.x <= score.x <= player.x + player.width or score.x <= player.x <= score.x + score.width:
-                    # play money sound effect
-                    moneySound.play()
-                    # remove score from list
-                    scores.remove(score)
-                    # increase score
+        if rectCollide(scores, True):
+            # play money sound effect
+            moneySound.play()
+            # increase score
+            Score += 1
+
+        # collisions between enemies and player
+        if rectCollide(enemies, True):
+            player.hit()
+
+        # checks for all collisions between bullets and everything else
+        for bullet in bullets:
+            bulletDestroyed = False
+            # checks if bullet is still on screen
+            if bullet.y > 0:
+                # moves bullet forward
+                bullet.y -= bullet.vel
+            else:
+                # removes bullet from list
+                bullets.remove(bullet)
+
+            # make sure that the same bullets does not collide with multiple objects to prevent error
+            if not bulletDestroyed:
+                # checks for collisions between bullets and boats
+                if rectCollide(boats, True, bullet):
+                    # increment score
                     Score += 1
+                    # remove bullet from bullets list
+                    bullets.remove(bullet)
+                    # set bulletDestroyed to true to prevent multiple collisions
+                    bulletDestroyed = True
+
+            # make sure that the same bullets does not collide with multiple objects to prevent error
+            if not bulletDestroyed:
+                # collisions between ceiling and bullets
+                if rectCollide(ceilingBlocks, True, bullet):
+                    # increment score
+                    Score += 1
+                    # remove bullet from bullets list
+                    bullets.remove(bullet)
+                    # set bulletDestroyed to true to prevent multiple collisions
+                    bulletDestroyed = True
+
+            # make sure that the same bullets does not collide with multiple objects to prevent error
+            if not bulletDestroyed:
+                # check for collisions between enemies and bullet
+                if rectCollide(enemies, True, bullet):
+                    Score += 1
+                    # remove bullet from bullets list
+                    bullets.remove(bullet)
+                    # set bulletDestroyed to true to prevent multiple collisions
+                    bulletDestroyed = True
+
+            # make sure that the same bullets does not collide with multiple objects to prevent error
+            if not bulletDestroyed:
+                # collisions between boss and bullet
+                if rectCollide(bosses, False, bullet, True):
+                    # remove bullet from list
+                    bullets.remove(bullet)
+                    bulletDestroyed = True
+
+
+        # collisions between boats and other things
+        for boat in boats:
+            boatDestroyed = False
+            # collisions between enemy and boats
+            if rectCollide(enemies, False, boat):
+                boats.remove(boat)
+                boatDestroyed = True
+
+            # prevent two collisions from happening with the same boat
+            # so the game doesn't try to remove the same boat twice and give an error
+            if not boatDestroyed:
+                # checks for collisions between boss and boats
+                if rectCollide(bosses, False, boat):
+                    # remove boat from list
+                    boats.remove(boat)
+                    boatDestroyed = True
 
         # check for a collision between the player and the speed power up
         for speed in speeds:
@@ -1083,89 +1161,6 @@ def gameLoop():
             else:
                 Pass = True
 
-        # if its level 1 a door opens up in the wall allowing player to pass through to the next level
-        # rep prevents this from being repeated every frame
-        if level == 1 and rep == True and not scores:
-            ceilingBlocks.remove(ceilingBlocks[8])
-            ceilingBlocks.remove(ceilingBlocks[8])
-            rep = False
-
-        # checks for all collisions between bullets and everything else
-        for bullet in bullets:
-            # checks if bullet is still on screen
-            if bullet.y > 0:
-                # moves bullet forward
-                bullet.y -= bullet.vel
-            else:
-                # removes bullet from list
-                bullets.remove(bullet)
-
-            # checks for collisions between bullets and boats
-            for boat in boats:
-                if bullet.y <= boat.y <= bullet.y + bullet.height or boat.y <= bullet.y <= boat.y + boat.height:
-                    if bullet.x <= boat.x <= bullet.x + bullet.width or boat.x <= bullet.x <= boat.x + boat.width:
-                        # increment score
-                        Score += 1
-                        # remove both boat and bullets from lists
-                        boats.remove(boat)
-                        bullets.remove(bullet)
-
-            # collisions between ceiling and bullets
-            for ceilingBlock in ceilingBlocks:
-                if bullet.y <= ceilingBlock.y <= bullet.y + bullet.height or ceilingBlock.y <= bullet.y <= ceilingBlock.y + ceilingBlock.height:
-                    if bullet.x <= ceilingBlock.x <= bullet.x + bullet.width or ceilingBlock.x <= bullet.x <= ceilingBlock.x + ceilingBlock.width:
-                        # increment score
-                        Score += 1
-                        # remove ceiling block and bullet from lists
-                        ceilingBlocks.remove(ceilingBlock)
-                        bullets.remove(bullet)
-
-            # collisions between enemies and bullets
-            for enemy in enemies:
-                if bullet.y <= enemy.y <= bullet.y + bullet.height or enemy.y <= bullet.y <= enemy.y + enemy.height:
-                    if bullet.x <= enemy.x <= bullet.x + bullet.width or enemy.x <= bullet.x <= enemy.x + enemy.width:
-                        Score += 1
-                        # make sure that the same bullets does not collide with multiple enemies to prevent error
-                        if not bulletDestroyed:
-                            # remove enemy and bullet from lists
-                            enemies.remove(enemy)
-                            bullets.remove(bullet)
-                            bulletDestroyed = True
-
-            # collisions between boss and bullet
-            for boss in bosses:
-                if bullet.y <= boss.y <= bullet.y + bullet.height or boss.y <= bullet.y <= boss.y + boss.height:
-                    if bullet.x <= boss.x <= bullet.x + bullet.width or boss.x <= bullet.x <= boss.x + boss.width:
-                        # increase score by 5
-                        Score += 5
-                        # make sure same bullet does not collide with two bosses
-                        if not bulletDestroyed:
-                            # remove bullet from list
-                            bullets.remove(bullet)
-                            bulletDestroyed = True
-                            # decrease boss life
-                            if boss.lives > 1:
-                                # if lives left, take 1 life away from boss
-                                boss.lives -= 1
-                            else:
-                                # if no lives, remove boss from list; kill boss
-                                bosses.remove(boss)
-
-        # collisions between enemies and player
-        for enemy in enemies:
-            if player.y <= enemy.y <= player.y + player.height or enemy.y <= player.y <= enemy.y + enemy.height:
-                if player.x <= enemy.x <= player.x + player.width or enemy.x <= player.x <= enemy.x + enemy.width:
-                    # player is hit, decrease lives
-                    player.hit()
-                    enemies.remove(enemy)
-
-            # collisions between enemy and boats
-            for boat in boats:
-                if enemy.y <= boat.y <= enemy.y + enemy.height or boat.y <= enemy.y <= boat.y + boat.height:
-                    if enemy.x <= boat.x <= enemy.x + enemy.width or boat.x <= enemy.x <= boat.x + boat.width:
-                        # remove boat from list
-                        boats.remove(boat)
-
         # telling pygame what to do when a key is pressed - allows character to move continuosly whilst key is being pressed.
         keys = pygame.key.get_pressed()
         # esc to quit
@@ -1178,7 +1173,7 @@ def gameLoop():
         if keys[pygame.K_SPACE] and shootCooldown == 0 and level > 1 and not scores and magLeft > 0:
             # play bullet shooting sound effect
             bulletSound.play()
-            # add bullet to list
+            # add bullet to list, starting just in front of the player
             bullets.append(classes.projectile(player.x + 5, player.y, 15, 40))
             # start cooldown cycle
             shootCooldown = 1
